@@ -1,0 +1,262 @@
+x-peer-base: &peer-base
+  image: hyperledger/fabric-peer:${CHAINSETTLE_FABRIC_VERSION}
+  environment:
+    FABRIC_LOGGING_SPEC: INFO
+    CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+    CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: chainsettle_chainsettle_net
+    CORE_PEER_TLS_ENABLED: "true"
+    CORE_PEER_PROFILE_ENABLED: "true"
+    CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+    CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+    CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+    CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+    CORE_LEDGER_STATE_STATEDATABASE: CouchDB
+    CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: ${CHAINSETTLE_COUCHDB_USER}
+    CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+    CORE_CHAINCODE_EXECUTETIMEOUT: 300s
+    CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+  working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+  command: peer node start
+  volumes:
+    - /var/run/:/host/var/run/
+  networks:
+    - chainsettle_net
+
+services:
+  orderer.chainsettle.com:
+    container_name: orderer.chainsettle.com
+    image: hyperledger/fabric-orderer:${CHAINSETTLE_FABRIC_VERSION}
+    environment:
+      FABRIC_LOGGING_SPEC: INFO
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: 7050
+      ORDERER_GENERAL_LOCALMSPID: ChainSettleOrdererMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /var/hyperledger/orderer/msp
+      ORDERER_GENERAL_GENESISMETHOD: file
+      ORDERER_GENERAL_GENESISFILE: /var/hyperledger/orderer/orderer.genesis.block
+      ORDERER_GENERAL_TLS_ENABLED: "true"
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_GENERAL_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_ADMIN_TLS_ENABLED: "true"
+      ORDERER_ADMIN_TLS_CERTIFICATE: /var/hyperledger/orderer/tls/server.crt
+      ORDERER_ADMIN_TLS_PRIVATEKEY: /var/hyperledger/orderer/tls/server.key
+      ORDERER_ADMIN_TLS_ROOTCAS: '[/var/hyperledger/orderer/tls/ca.crt]'
+      ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:9440
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    ports:
+      - "7050:7050"
+      - "9440:9440"
+    volumes:
+      - ./system-genesis-block/genesis.block:/var/hyperledger/orderer/orderer.genesis.block:ro
+      - ./organizations/ordererOrganizations/chainsettle.com/orderers/orderer.chainsettle.com/msp:/var/hyperledger/orderer/msp:ro
+      - ./organizations/ordererOrganizations/chainsettle.com/orderers/orderer.chainsettle.com/tls:/var/hyperledger/orderer/tls:ro
+      - orderer_data:/var/hyperledger/production/orderer
+    networks:
+      - chainsettle_net
+
+  couchdb.bankalpha:
+    container_name: couchdb.bankalpha
+    image: couchdb:3.3
+    environment:
+      COUCHDB_USER: ${CHAINSETTLE_COUCHDB_USER}
+      COUCHDB_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+    ports:
+      - "5984:5984"
+    networks:
+      - chainsettle_net
+
+  peer0.bankalpha.chainsettle.com:
+    <<: *peer-base
+    container_name: peer0.bankalpha.chainsettle.com
+    environment:
+      CORE_PEER_ID: peer0.bankalpha.chainsettle.com
+      CORE_PEER_ADDRESS: peer0.bankalpha.chainsettle.com:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer0.bankalpha.chainsettle.com:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer0.bankalpha.chainsettle.com:7051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.bankalpha.chainsettle.com:7051
+      CORE_PEER_LOCALMSPID: BankAlphaMSP
+      CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb.bankalpha:5984
+      CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: ${CHAINSETTLE_COUCHDB_USER}
+      CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+      FABRIC_LOGGING_SPEC: INFO
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: chainsettle_chainsettle_net
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_PROFILE_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_LEDGER_STATE_STATEDATABASE: CouchDB
+      CORE_CHAINCODE_EXECUTETIMEOUT: 300s
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+    ports:
+      - "7051:7051"
+      - "9443:9443"
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./organizations/peerOrganizations/bankalpha.chainsettle.com/peers/peer0.bankalpha.chainsettle.com/msp:/etc/hyperledger/fabric/msp:ro
+      - ./organizations/peerOrganizations/bankalpha.chainsettle.com/peers/peer0.bankalpha.chainsettle.com/tls:/etc/hyperledger/fabric/tls:ro
+      - peer0_bankalpha_data:/var/hyperledger/production
+    depends_on:
+      - couchdb.bankalpha
+
+  couchdb.bankbeta:
+    container_name: couchdb.bankbeta
+    image: couchdb:3.3
+    environment:
+      COUCHDB_USER: ${CHAINSETTLE_COUCHDB_USER}
+      COUCHDB_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+    ports:
+      - "6984:5984"
+    networks:
+      - chainsettle_net
+
+  peer0.bankbeta.chainsettle.com:
+    <<: *peer-base
+    container_name: peer0.bankbeta.chainsettle.com
+    environment:
+      CORE_PEER_ID: peer0.bankbeta.chainsettle.com
+      CORE_PEER_ADDRESS: peer0.bankbeta.chainsettle.com:9051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:9051
+      CORE_PEER_CHAINCODEADDRESS: peer0.bankbeta.chainsettle.com:9052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:9052
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer0.bankbeta.chainsettle.com:9051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.bankbeta.chainsettle.com:9051
+      CORE_PEER_LOCALMSPID: BankBetaMSP
+      CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb.bankbeta:5984
+      CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: ${CHAINSETTLE_COUCHDB_USER}
+      CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+      FABRIC_LOGGING_SPEC: INFO
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: chainsettle_chainsettle_net
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_PROFILE_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_LEDGER_STATE_STATEDATABASE: CouchDB
+      CORE_CHAINCODE_EXECUTETIMEOUT: 300s
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+    ports:
+      - "8051:9051"
+      - "9543:9443"
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./organizations/peerOrganizations/bankbeta.chainsettle.com/peers/peer0.bankbeta.chainsettle.com/msp:/etc/hyperledger/fabric/msp:ro
+      - ./organizations/peerOrganizations/bankbeta.chainsettle.com/peers/peer0.bankbeta.chainsettle.com/tls:/etc/hyperledger/fabric/tls:ro
+      - peer0_bankbeta_data:/var/hyperledger/production
+    depends_on:
+      - couchdb.bankbeta
+
+  couchdb.clearinghouse:
+    container_name: couchdb.clearinghouse
+    image: couchdb:3.3
+    environment:
+      COUCHDB_USER: ${CHAINSETTLE_COUCHDB_USER}
+      COUCHDB_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+    ports:
+      - "7984:5984"
+    networks:
+      - chainsettle_net
+
+  peer0.clearinghouse.chainsettle.com:
+    <<: *peer-base
+    container_name: peer0.clearinghouse.chainsettle.com
+    environment:
+      CORE_PEER_ID: peer0.clearinghouse.chainsettle.com
+      CORE_PEER_ADDRESS: peer0.clearinghouse.chainsettle.com:11051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:11051
+      CORE_PEER_CHAINCODEADDRESS: peer0.clearinghouse.chainsettle.com:11052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:11052
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer0.clearinghouse.chainsettle.com:11051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer0.clearinghouse.chainsettle.com:11051
+      CORE_PEER_LOCALMSPID: ClearingHouseMSP
+      CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS: couchdb.clearinghouse:5984
+      CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME: ${CHAINSETTLE_COUCHDB_USER}
+      CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD: ${CHAINSETTLE_COUCHDB_PASSWORD}
+      FABRIC_LOGGING_SPEC: INFO
+      CORE_VM_ENDPOINT: unix:///host/var/run/docker.sock
+      CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE: chainsettle_chainsettle_net
+      CORE_PEER_TLS_ENABLED: "true"
+      CORE_PEER_PROFILE_ENABLED: "true"
+      CORE_PEER_TLS_CERT_FILE: /etc/hyperledger/fabric/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /etc/hyperledger/fabric/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /etc/hyperledger/fabric/tls/ca.crt
+      CORE_PEER_MSPCONFIGPATH: /etc/hyperledger/fabric/msp
+      CORE_LEDGER_STATE_STATEDATABASE: CouchDB
+      CORE_CHAINCODE_EXECUTETIMEOUT: 300s
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+    ports:
+      - "9051:11051"
+      - "9643:9443"
+    volumes:
+      - /var/run/:/host/var/run/
+      - ./organizations/peerOrganizations/clearinghouse.chainsettle.com/peers/peer0.clearinghouse.chainsettle.com/msp:/etc/hyperledger/fabric/msp:ro
+      - ./organizations/peerOrganizations/clearinghouse.chainsettle.com/peers/peer0.clearinghouse.chainsettle.com/tls:/etc/hyperledger/fabric/tls:ro
+      - peer0_clearinghouse_data:/var/hyperledger/production
+    depends_on:
+      - couchdb.clearinghouse
+
+  ca.bankalpha.chainsettle.com:
+    container_name: ca.bankalpha.chainsettle.com
+    image: hyperledger/fabric-ca:${CHAINSETTLE_CA_VERSION}
+    environment:
+      FABRIC_CA_HOME: /etc/hyperledger/fabric-ca-server
+      FABRIC_CA_SERVER_CA_NAME: ca-bankalpha
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: 7054
+    ports:
+      - "7054:7054"
+    command: sh -c "fabric-ca-server start -b ${CHAINSETTLE_FABRIC_CA_ADMIN_USER}:${CHAINSETTLE_FABRIC_CA_ADMIN_PASSWORD}"
+    volumes:
+      - ./organizations/fabric-ca/bankalpha:/etc/hyperledger/fabric-ca-server
+    networks:
+      - chainsettle_net
+
+  ca.bankbeta.chainsettle.com:
+    container_name: ca.bankbeta.chainsettle.com
+    image: hyperledger/fabric-ca:${CHAINSETTLE_CA_VERSION}
+    environment:
+      FABRIC_CA_HOME: /etc/hyperledger/fabric-ca-server
+      FABRIC_CA_SERVER_CA_NAME: ca-bankbeta
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: 8054
+    ports:
+      - "8054:8054"
+    command: sh -c "fabric-ca-server start -b ${CHAINSETTLE_FABRIC_CA_ADMIN_USER}:${CHAINSETTLE_FABRIC_CA_ADMIN_PASSWORD}"
+    volumes:
+      - ./organizations/fabric-ca/bankbeta:/etc/hyperledger/fabric-ca-server
+    networks:
+      - chainsettle_net
+
+  ca.clearinghouse.chainsettle.com:
+    container_name: ca.clearinghouse.chainsettle.com
+    image: hyperledger/fabric-ca:${CHAINSETTLE_CA_VERSION}
+    environment:
+      FABRIC_CA_HOME: /etc/hyperledger/fabric-ca-server
+      FABRIC_CA_SERVER_CA_NAME: ca-clearinghouse
+      FABRIC_CA_SERVER_TLS_ENABLED: "true"
+      FABRIC_CA_SERVER_PORT: 9054
+    ports:
+      - "9054:9054"
+    command: sh -c "fabric-ca-server start -b ${CHAINSETTLE_FABRIC_CA_ADMIN_USER}:${CHAINSETTLE_FABRIC_CA_ADMIN_PASSWORD}"
+    volumes:
+      - ./organizations/fabric-ca/clearinghouse:/etc/hyperledger/fabric-ca-server
+    networks:
+      - chainsettle_net
+
+volumes:
+  orderer_data:
+  peer0_bankalpha_data:
+  peer0_bankbeta_data:
+  peer0_clearinghouse_data:
+
+networks:
+  chainsettle_net:
+    name: chainsettle_chainsettle_net

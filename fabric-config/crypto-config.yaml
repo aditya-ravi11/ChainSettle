@@ -1,0 +1,31 @@
+OrdererOrgs:
+  - Name: ChainSettleOrderer
+    Domain: chainsettle.com
+    Specs:
+      - Hostname: orderer
+
+PeerOrgs:
+  - Name: BankAlpha
+    Domain: bankalpha.chainsettle.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  - Name: BankBeta
+    Domain: bankbeta.chainsettle.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+
+  - Name: ClearingHouse
+    Domain: clearinghouse.chainsettle.com
+    EnableNodeOUs: true
+    Template:
+      Count: 1
+    Users:
+      Count: 1
+

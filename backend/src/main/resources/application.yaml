@@ -1,0 +1,54 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/chainsettle}
+    username: ${SPRING_DATASOURCE_USERNAME:chainsettle}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+chainsettle:
+  allowed-origins: ${CHAINSETTLE_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000}
+  fabric:
+    event-listener-enabled: true
+    config-base: ${CHAINSETTLE_FABRIC_CONFIG_BASE:.}
+    channel-name: ${CHAINSETTLE_FABRIC_CHANNEL_NAME:settlement-channel}
+    chaincode-name: ${CHAINSETTLE_FABRIC_CHAINCODE_NAME:token-settlement}
+    profiles:
+      BankAlpha: ${CHAINSETTLE_FABRIC_BANKALPHA_PROFILE:fabric-config/connection-bankalpha.json}
+      BankBeta: ${CHAINSETTLE_FABRIC_BANKBETA_PROFILE:fabric-config/connection-bankbeta.json}
+      ClearingHouse: ${CHAINSETTLE_FABRIC_CLEARINGHOUSE_PROFILE:fabric-config/connection-clearinghouse.json}
+
+simulator:
+  enabled: ${CHAINSETTLE_SIMULATOR_ENABLED:true}
+  interval-ms: ${CHAINSETTLE_SIMULATOR_INTERVAL_MS:2000}
+  initial-mint-amount: ${CHAINSETTLE_SIMULATOR_INITIAL_MINT_AMOUNT:10000000}
+  initial-mint-amount-eur: ${CHAINSETTLE_SIMULATOR_INITIAL_MINT_AMOUNT_EUR:5000000}
+  max-transfer-amount: ${CHAINSETTLE_SIMULATOR_MAX_TRANSFER_AMOUNT:500000}
+  min-transfer-amount: ${CHAINSETTLE_SIMULATOR_MIN_TRANSFER_AMOUNT:1000}
+  dvp-probability: ${CHAINSETTLE_SIMULATOR_DVP_PROBABILITY:0.20}
+  batch-probability: ${CHAINSETTLE_SIMULATOR_BATCH_PROBABILITY:0.10}
+  failure-probability: ${CHAINSETTLE_SIMULATOR_FAILURE_PROBABILITY:0.05}
+  duration-minutes: ${CHAINSETTLE_SIMULATOR_DURATION_MINUTES:0}

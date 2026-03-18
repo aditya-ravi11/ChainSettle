@@ -1,0 +1,183 @@
+Organizations:
+  - &OrdererOrg
+    Name: ChainSettleOrdererMSP
+    ID: ChainSettleOrdererMSP
+    MSPDir: ../organizations/ordererOrganizations/chainsettle.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ChainSettleOrdererMSP.member')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ChainSettleOrdererMSP.member')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ChainSettleOrdererMSP.admin')"
+    OrdererEndpoints:
+      - orderer.chainsettle.com:7050
+
+  - &BankAlpha
+    Name: BankAlphaMSP
+    ID: BankAlphaMSP
+    MSPDir: ../organizations/peerOrganizations/bankalpha.chainsettle.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('BankAlphaMSP.admin', 'BankAlphaMSP.peer', 'BankAlphaMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('BankAlphaMSP.admin', 'BankAlphaMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('BankAlphaMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('BankAlphaMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.bankalpha.chainsettle.com
+        Port: 7051
+
+  - &BankBeta
+    Name: BankBetaMSP
+    ID: BankBetaMSP
+    MSPDir: ../organizations/peerOrganizations/bankbeta.chainsettle.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('BankBetaMSP.admin', 'BankBetaMSP.peer', 'BankBetaMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('BankBetaMSP.admin', 'BankBetaMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('BankBetaMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('BankBetaMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.bankbeta.chainsettle.com
+        Port: 9051
+
+  - &ClearingHouse
+    Name: ClearingHouseMSP
+    ID: ClearingHouseMSP
+    MSPDir: ../organizations/peerOrganizations/clearinghouse.chainsettle.com/msp
+    Policies:
+      Readers:
+        Type: Signature
+        Rule: "OR('ClearingHouseMSP.admin', 'ClearingHouseMSP.peer', 'ClearingHouseMSP.client')"
+      Writers:
+        Type: Signature
+        Rule: "OR('ClearingHouseMSP.admin', 'ClearingHouseMSP.client')"
+      Admins:
+        Type: Signature
+        Rule: "OR('ClearingHouseMSP.admin')"
+      Endorsement:
+        Type: Signature
+        Rule: "OR('ClearingHouseMSP.peer')"
+    AnchorPeers:
+      - Host: peer0.clearinghouse.chainsettle.com
+        Port: 11051
+
+Capabilities:
+  Channel: &ChannelCapabilities
+    V2_0: true
+  Orderer: &OrdererCapabilities
+    V2_0: true
+  Application: &ApplicationCapabilities
+    V2_0: true
+
+Application: &ApplicationDefaults
+  ACLs:
+    _lifecycle/CheckCommitReadiness: /Channel/Application/Writers
+    _lifecycle/CommitChaincodeDefinition: /Channel/Application/Writers
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    LifecycleEndorsement:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Endorsement"
+    Endorsement:
+      Type: Signature
+      Rule: "OutOf(2, 'BankAlphaMSP.peer', 'BankBetaMSP.peer', 'ClearingHouseMSP.peer')"
+  Capabilities:
+    <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  Addresses:
+    - orderer.chainsettle.com:7050
+  BatchTimeout: 2s
+  BatchSize:
+    MaxMessageCount: 10
+    AbsoluteMaxBytes: 99 MB
+    PreferredMaxBytes: 512 KB
+  EtcdRaft:
+    Consenters:
+      - Host: orderer.chainsettle.com
+        Port: 7050
+        ClientTLSCert: ../organizations/ordererOrganizations/chainsettle.com/orderers/orderer.chainsettle.com/tls/server.crt
+        ServerTLSCert: ../organizations/ordererOrganizations/chainsettle.com/orderers/orderer.chainsettle.com/tls/server.crt
+  Organizations:
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+    BlockValidation:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+  Capabilities:
+    <<: *OrdererCapabilities
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Profiles:
+  ChainSettleGenesis:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations:
+        - *OrdererOrg
+    Consortiums:
+      ChainSettleConsortium:
+        Organizations:
+          - *BankAlpha
+          - *BankBeta
+          - *ClearingHouse
+
+  ChainSettleChannel:
+    Consortium: ChainSettleConsortium
+    <<: *ChannelDefaults
+    Application:
+      <<: *ApplicationDefaults
+      Organizations:
+        - *BankAlpha
+        - *BankBeta
+        - *ClearingHouse
+

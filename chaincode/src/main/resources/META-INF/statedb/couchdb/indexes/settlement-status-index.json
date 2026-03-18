@@ -1,0 +1,9 @@
+{
+  "index": {
+    "fields": ["docType", "status", "createdAt"]
+  },
+  "ddoc": "settlementStatusIndexDoc",
+  "name": "settlementStatusIndex",
+  "type": "json"
+}
+

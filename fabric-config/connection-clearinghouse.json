@@ -1,0 +1,9 @@
+{
+  "orgName": "ClearingHouse",
+  "mspId": "ClearingHouseMSP",
+  "peerEndpoint": "peer0.clearinghouse.chainsettle.com:11051",
+  "peerHostAlias": "peer0.clearinghouse.chainsettle.com",
+  "tlsCertPath": "organizations/peerOrganizations/clearinghouse.chainsettle.com/peers/peer0.clearinghouse.chainsettle.com/tls/ca.crt",
+  "identityCertPath": "organizations/peerOrganizations/clearinghouse.chainsettle.com/users/User1@clearinghouse.chainsettle.com/msp/signcerts/cert.pem",
+  "privateKeyPath": "organizations/peerOrganizations/clearinghouse.chainsettle.com/users/User1@clearinghouse.chainsettle.com/msp/keystore/priv_sk"
+}

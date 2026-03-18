@@ -1,0 +1,9 @@
+{
+  "index": {
+    "fields": ["docType", "orgName", "accountType", "status"]
+  },
+  "ddoc": "accountOrgIndexDoc",
+  "name": "accountOrgIndex",
+  "type": "json"
+}
+

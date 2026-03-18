@@ -1,0 +1,77 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: chainsettle-postgres
+    environment:
+      POSTGRES_DB: ${CHAINSETTLE_POSTGRES_DB}
+      POSTGRES_USER: ${CHAINSETTLE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${CHAINSETTLE_POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${CHAINSETTLE_POSTGRES_USER} -d ${CHAINSETTLE_POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - chainsettle_net
+
+  chainsettle-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: chainsettle-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${CHAINSETTLE_POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${CHAINSETTLE_POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${CHAINSETTLE_POSTGRES_PASSWORD}
+      CHAINSETTLE_ALLOWED_ORIGINS: ${CHAINSETTLE_ALLOWED_ORIGINS}
+      CHAINSETTLE_SIMULATOR_ENABLED: ${CHAINSETTLE_SIMULATOR_ENABLED}
+      CHAINSETTLE_SIMULATOR_INTERVAL_MS: ${CHAINSETTLE_SIMULATOR_INTERVAL_MS}
+      CHAINSETTLE_SIMULATOR_INITIAL_MINT_AMOUNT: ${CHAINSETTLE_SIMULATOR_INITIAL_MINT_AMOUNT}
+      CHAINSETTLE_SIMULATOR_INITIAL_MINT_AMOUNT_EUR: ${CHAINSETTLE_SIMULATOR_INITIAL_MINT_AMOUNT_EUR}
+      CHAINSETTLE_SIMULATOR_MIN_TRANSFER_AMOUNT: ${CHAINSETTLE_SIMULATOR_MIN_TRANSFER_AMOUNT}
+      CHAINSETTLE_SIMULATOR_MAX_TRANSFER_AMOUNT: ${CHAINSETTLE_SIMULATOR_MAX_TRANSFER_AMOUNT}
+      CHAINSETTLE_SIMULATOR_DVP_PROBABILITY: ${CHAINSETTLE_SIMULATOR_DVP_PROBABILITY}
+      CHAINSETTLE_SIMULATOR_BATCH_PROBABILITY: ${CHAINSETTLE_SIMULATOR_BATCH_PROBABILITY}
+      CHAINSETTLE_SIMULATOR_FAILURE_PROBABILITY: ${CHAINSETTLE_SIMULATOR_FAILURE_PROBABILITY}
+      CHAINSETTLE_SIMULATOR_DURATION_MINUTES: ${CHAINSETTLE_SIMULATOR_DURATION_MINUTES}
+      CHAINSETTLE_FABRIC_CONFIG_BASE: /etc/fabric
+      CHAINSETTLE_FABRIC_CHANNEL_NAME: ${CHAINSETTLE_CHANNEL_NAME}
+      CHAINSETTLE_FABRIC_CHAINCODE_NAME: ${CHAINSETTLE_CHAINCODE_NAME}
+      CHAINSETTLE_FABRIC_BANKALPHA_PROFILE: /etc/fabric/connection-bankalpha.json
+      CHAINSETTLE_FABRIC_BANKBETA_PROFILE: /etc/fabric/connection-bankbeta.json
+      CHAINSETTLE_FABRIC_CLEARINGHOUSE_PROFILE: /etc/fabric/connection-clearinghouse.json
+    volumes:
+      - ./fabric-config:/etc/fabric:ro
+      - ./organizations:/etc/fabric/organizations:ro
+    networks:
+      - chainsettle_net
+
+  chainsettle-dashboard:
+    image: nginx:alpine
+    container_name: chainsettle-dashboard
+    ports:
+      - "3000:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html:ro
+    depends_on:
+      - chainsettle-api
+    networks:
+      - chainsettle_net
+
+volumes:
+  postgres_data:
+
+networks:
+  chainsettle_net:
+    name: chainsettle_chainsettle_net

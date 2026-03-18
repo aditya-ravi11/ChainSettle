@@ -1,0 +1,10 @@
+{
+  "orgName": "BankAlpha",
+  "mspId": "BankAlphaMSP",
+  "peerEndpoint": "peer0.bankalpha.chainsettle.com:7051",
+  "peerHostAlias": "peer0.bankalpha.chainsettle.com",
+  "tlsCertPath": "organizations/peerOrganizations/bankalpha.chainsettle.com/peers/peer0.bankalpha.chainsettle.com/tls/ca.crt",
+  "identityCertPath": "organizations/peerOrganizations/bankalpha.chainsettle.com/users/User1@bankalpha.chainsettle.com/msp/signcerts/cert.pem",
+  "privateKeyPath": "organizations/peerOrganizations/bankalpha.chainsettle.com/users/User1@bankalpha.chainsettle.com/msp/keystore/priv_sk"
+}
+

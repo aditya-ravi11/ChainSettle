@@ -1,0 +1,9 @@
+{
+  "index": {
+    "fields": ["docType", "timestamp", "status", "fromOrg", "toOrg"]
+  },
+  "ddoc": "transactionDateIndexDoc",
+  "name": "transactionDateIndex",
+  "type": "json"
+}
+
